@@ -32,14 +32,14 @@ Contains app configuration constant definitions;
 
 This file can be located in any folder to manage Beaver's behavior while listing it.
 
-### .htaccess
+### Server config / apache.htaccess
 
 Bypasses default behavior of Apache-based servers and allows Beaver to serve files and folders indirectly in a managed way. 
 
-### normalize_nfc.sh
+### Server config / normalize_nfc.sh
 
 Converts Mac OS based UTF-8 NFD filenames to standard/Linux NFC
 
-### .nginx_sample.conf
+### Server config / .nginx_sample.conf
 
 Sample configuration file for NGINX-based servers.
