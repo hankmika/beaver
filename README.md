@@ -28,10 +28,6 @@ Contains app configuration constant definitions;
 - **CONF_ROBOTS** (robots string): HTML robots meta setting. Default: index,follow
 - **CONF_USERS** (users array): Allowed usernames and passwords required if PRIVATE_MODE or MAINTENANCE_MODE is on. Passwords are sha1 encoded. Default: 'root' => '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33' (password is foo)
 
-### .beavercfg
-
-This file can be located in any folder to manage Beaver's behavior while listing it.
-
 ### Server config / apache.htaccess
 
 Bypasses default behavior of Apache-based servers and allows Beaver to serve files and folders indirectly in a managed way. 
@@ -48,7 +44,7 @@ Sample configuration file for NGINX-based servers.
 
 ## .beavercfg
 
-Beaver handler .beavercfg files by default. These are INI-style formatted files that can set up specific settings for their parent folder. Sample .beavercfg file:
+Beaver handles .beavercfg files by default. These are INI-style formatted files that can set up specific settings for their parent folder. Sample .beavercfg file:
 
 ```ini
 [settings]
