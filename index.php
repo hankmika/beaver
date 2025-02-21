@@ -229,7 +229,7 @@ function getFileExtension($filePath) {
 		<div class="wrapper">
 			<?php
 			// Get the current path and sanitize
-			$path = sanitizePath(rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)));
+			$path = sanitizePath(urldecode(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))));
 
 			// Get the current directory
 			$systemPath = preg_replace('#/+$#u', '', __DIR__ . CONF_ROOT . $path);
