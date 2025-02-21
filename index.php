@@ -12,19 +12,19 @@ header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer-when-downgrade');
 
 // Set up language
-if(CONF_LANG == 'auto') {
+if (CONF_LANG == 'auto') {
 	$browserLang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
 	setLang($browserLang);
 }
 else setLang(CONF_LANG);
 
 // Maintenance mode on/off
-if(MAINTENANCE_MODE) {
+if (MAINTENANCE_MODE) {
 	error_reporting(E_ALL);
 	ini_set('error_reporting', E_ALL);
 	ini_set('display_errors', '1');
 
-	if(empty($_GET["test"])) {
+	if (empty($_GET["test"])) {
 		die(_t('Down for maintenance.'));
 	}
 	else {
@@ -34,7 +34,7 @@ if(MAINTENANCE_MODE) {
 	}
 }
 
-if(PRIVATE_MODE) {
+if (PRIVATE_MODE) {
 	// Check if the Authorization header is present and valid
 	if (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) {
 		// Send a 401 response to prompt the browser for credentials
@@ -61,13 +61,13 @@ if(PRIVATE_MODE) {
 
 // Set correct language string
 function setLang($lng) {
-	if(isset(LNG_MATRIX[$lng])) define('LNG', $lng);
+	if (isset(LNG_MATRIX[$lng])) define('LNG', $lng);
 	else define('LNG', 'en');
 }
 
 // Translate a string using translation matrix
 function _t($str) {
-	if(isset(LNG_MATRIX[LNG][$str])) return LNG_MATRIX[LNG][$str];
+	if (isset(LNG_MATRIX[LNG][$str])) return LNG_MATRIX[LNG][$str];
 	else return $str;
 }
 
@@ -95,7 +95,7 @@ function renderPath($path) {
 	$renderedPath = '';
 	$currentPath = '';
 
-	if(!empty($deconstructedPath[0])) {
+	if (!empty($deconstructedPath[0])) {
 		$renderedPath = '/<a href="/">root</a>';
 
 		foreach($deconstructedPath as $item) {
@@ -108,7 +108,7 @@ function renderPath($path) {
 }
 
 function displayFile($filePath) {
-	if(!file_exists($filePath)) {
+	if (!file_exists($filePath)) {
 		print _t('File does not exist.');
 		return;
 	}
@@ -126,7 +126,7 @@ function displayFile($filePath) {
 			// For text files
 			$content = htmlspecialchars(file_get_contents($filePath));
 
-			if(getFileExtension($filePath) == 'md') {
+			if (getFileExtension($filePath) == 'md') {
 				print '<div class="text">' . parseMarkdown($content) . '</div>';
 			}
 			else print '<pre>' . $content . '</pre>';
@@ -198,6 +198,35 @@ function getFileExtension($filePath) {
 	return isset($fileInfo['extension']) ? $fileInfo['extension'] : '';
 }
 
+function readBeaverConfig($configPath) {
+	$config = [
+		'sort_by' => 'name', // Default config
+		'ignored_files' => [],
+		'show_dates' => false,
+		'show_times' => false
+	];
+
+	if (CONF_USEGCFG && file_exists($configPath)) {
+		$parsedConfig = parse_ini_file($configPath, true);
+		if ($parsedConfig) {
+			if (!empty($parsedConfig['settings']['sort_by'])) {
+				$config['sort_by'] = strtolower(trim($parsedConfig['settings']['sort_by']));
+			}
+			if (!empty($parsedConfig['settings']['ignored_files'])) {
+				$config['ignored_files'] = array_map('trim', explode(',', $parsedConfig['settings']['ignored_files']));
+			}
+			if (!empty($parsedConfig['settings']['show_dates'])) {
+				$config['show_dates'] = filter_var($parsedConfig['settings']['show_dates'], FILTER_VALIDATE_BOOLEAN);
+			}
+			if (!empty($parsedConfig['settings']['show_times'])) {
+				$config['show_times'] = filter_var($parsedConfig['settings']['show_times'], FILTER_VALIDATE_BOOLEAN);
+			}
+		}
+	}
+
+	return $config;
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -235,31 +264,30 @@ function getFileExtension($filePath) {
 			$systemPath = preg_replace('#/+$#u', '', __DIR__ . CONF_ROOT . $path);
 
 			// Scan the directory to get its contents, apply filter
-			if(is_dir($systemPath)) {
-				$entries = scandir($systemPath);
-				$entries = array_diff($entries, ['.', '..', 'beaver_config.php', 'index.php', '.htaccess', '.beavercfg']);
+			if (is_dir($systemPath)) {
+				$config = readBeaverConfig($systemPath . '/.beavercfg');
+
+				$defaultIgnored = ['.', '..', 'beaver_config.php', 'index.php', '.htaccess', '.beavercfg'];
+				$entries = array_diff(scandir($systemPath), array_merge($defaultIgnored, $config['ignored_files']));
 
 				print '<strong>' . _t('Index') . (empty($path) ? _t(':') : _t(' of:')) . '</strong> <nav>' . renderPath($path) . '</nav>';
 
-				if(!empty($entries)) {
+				if (!empty($entries)) {
 					// Separate directories and files
 					$directories = [];
 					$files = [];
 
 					foreach($entries as $entry) {
-						if(is_dir($systemPath . '/' . $entry)) {
+						if (is_dir($systemPath . '/' . $entry)) {
 							$directories[] = $entry;
 						} 
-						elseif(is_file($systemPath . '/' . $entry)) {
+						elseif (is_file($systemPath . '/' . $entry)) {
 							$files[] = $entry;
 						}
 					}
 
-					// TBD toggle by .beavercfg setting
-					$sortByDate = false;
-
 					// Sorting logic
-					if($sortByDate) {
+					if ($config['sort_by'] === 'date') {
 						// Sort by date modified
 						usort($directories, function ($a, $b) {
 							return filemtime($b) <=> filemtime($a); // Descending order
@@ -275,30 +303,31 @@ function getFileExtension($filePath) {
 					}
 
 					// Print directories
-					if(!empty($directories)) {
+					if (!empty($directories)) {
 						print '<ul class="dirs">';
-
 						foreach ($directories as $directory) {
-							print '<li><a href="' . $path . '/' . $directory . '">[' . $directory . ']</a></li>' . PHP_EOL;
+							$modTime = date($config['show_times'] ? "Y-m-d H:i:s" : "Y-m-d", filemtime($systemPath . '/' . $directory));
+							$label = $config['show_dates'] || $config['show_times'] ? "[{$directory}] <em>({$modTime})</em>" : "[{$directory}]";
+							print '<li><a href="' . $path . '/' . $directory . '">' . $label . '</a></li>' . PHP_EOL;
 						}
-
 						print '</ul>';
 					}
 
 					// Print files
-					if(!empty($files)) {
+					if (!empty($files)) {
 						print '<ul class="files">';
-
 						foreach ($files as $file) {
-							print '<li><a href="' . $path . '/' . $file . '">' . $file . '</a></li>' . PHP_EOL;
+							$modTime = date($config['show_times'] ? "Y-m-d H:i:s" : "Y-m-d", filemtime($systemPath . '/' . $file));
+							$label = $config['show_dates'] || $config['show_times'] ? "{$file} <em>({$modTime})</em>" : $file;
+							print '<li><a href="' . $path . '/' . $file . '">' . $label . '</a></li>' . PHP_EOL;
 						}
-
 						print '</ul>';
 					}
+
 				}
 				else print '<ul><li>' . _t('Nothing to display.') . '</li></ul>';
 			}
-			elseif(is_file($systemPath)) {
+			elseif (is_file($systemPath)) {
 				print '<strong>' . _t('Display of:') . '</strong> ' . renderPath($path);
 
 				// TBD file display

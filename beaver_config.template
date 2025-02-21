@@ -6,7 +6,7 @@
 define('MAINTENANCE_MODE', false);
 define('PRIVATE_MODE', false); #TBD
 define('CONF_ROOT', '/');
-define('CONF_USEGCFG', true); #TBD
+define('CONF_USEGCFG', true);
 define('CONF_LANG', 'auto');
 define('CONF_BASE', '');
 define('CONF_ICON', '');

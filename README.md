@@ -43,3 +43,17 @@ Converts Mac OS based UTF-8 NFD filenames to standard/Linux NFC
 ### Server config / .nginx_sample.conf
 
 Sample configuration file for NGINX-based servers.
+
+---
+
+## .beavercfg
+
+Beaver handler .beavercfg files by default. These are INI-style formatted files that can set up specific settings for their parent folder. Sample .beavercfg file:
+
+```ini
+[settings]
+sort_by = name  ; Options: name, date
+ignored_files = .git, node_modules, secret.txt  ; Ignore specific files/folders
+show_dates = true  ; Show last modified date in listing
+show_times = true  ; Show last modified date/time in listing
+```
