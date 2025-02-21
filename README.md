@@ -36,6 +36,10 @@ This file can be located in any folder to manage Beaver's behavior while listing
 
 Bypasses default behavior of Apache-based servers and allows Beaver to serve files and folders indirectly in a managed way. 
 
+### normalize_nfc.sh
+
+Converts Mac OS based UTF-8 NFD filenames to standard/Linux NFC
+
 ### .nginx_sample.conf
 
 Sample configuration file for NGINX-based servers.

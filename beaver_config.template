@@ -1,0 +1,31 @@
+<?php
+// Gopher 2.0
+// By Jindrich "Hank" Mika, 2006-2025, hankmika.com
+// Configuration file
+
+define('MAINTENANCE_MODE', false);
+define('PRIVATE_MODE', false); #TBD
+define('CONF_ROOT', '/');
+define('CONF_USEGCFG', true); #TBD
+define('CONF_LANG', 'auto');
+define('CONF_BASE', '');
+define('CONF_ICON', '');
+define('CONF_SCHEME', ['light_bg' => '#E8DDCB', 'light_text' => '#033649', 'light_link' => '#031634', 'dark_bg' => '#131313', 'dark_text' => '#5cc147', 'dark_link' => '#7aff5f']);
+define('CONF_IGNORE', ['php', 'phtml', 'php5', 'php6', 'html', 'css']);
+define('CONF_CHARSET', 'UTF-8');
+define('CONF_TITLE', '');
+define('CONF_ROBOTS', 'index,follow'); // noindex,nofollow
+define('CONF_USERS', []); #TBD
+
+// Setting up languages
+$_languages['cs'] = ['Down for maintenance.' => 'Probíhá údržba.', 'File does not exist.' => 'Soubor neexistuje.', 'Image file' => 'Obrazový soubor', 'Your browser does not support the video tag.' => 'Váš prohlížeč nepodporuje HTML značku video.', 'Your browser does not support the audio tag.' => 'Váš prohlížeč nepodporuje HTML značku audio.', 'Unsupported file type: ' => 'Nepodporovaný typ souboru: ', 'Index' => 'Index', ':' => ':', ' of:' => ' adresáře:', 'Nothing to display.' => 'Není co zobrazit.', 'Display of:' => 'Zobrazení souboru:', 'ERROR: Invalid path.' => 'CHYBA: Neplatná cesta.'];
+$_languages['fr'] = ['Down for maintenance.' => 'En maintenance.', 'File does not exist.' => 'Le fichier n’existe pas.', 'Image file' => 'Fichier image', 'Your browser does not support the video tag.' => 'Votre navigateur ne prend pas en charge la balise vidéo.', 'Your browser does not support the audio tag.' => 'Votre navigateur ne prend pas en charge la balise audio.', 'Unsupported file type: ' => 'Type de fichier non pris en charge : ', 'Index' => 'Index', ':' => ':', ' of:' => ' de :', 'Nothing to display.' => 'Rien à afficher.', 'Display of:' => 'Affichage de:', 'ERROR: Invalid path.' => 'ERREUR : Chemin non valide.'];
+$_languages['de'] = ['Down for maintenance.' => 'Wartung im Gange.', 'File does not exist.' => 'Datei existiert nicht.', 'Image file' => 'Bilddatei', 'Your browser does not support the video tag.' => 'Ihr Browser unterstützt das Video-Tag nicht.', 'Your browser does not support the audio tag.' => 'Ihr Browser unterstützt das Audio-Tag nicht.', 'Unsupported file type: ' => 'Nicht unterstützter Dateityp: ', 'Index' => 'Index', ':' => ':', ' of:' => ' von:', 'Nothing to display.' => 'Nichts anzuzeigen.', 'Display of:' => 'Anzeigen von:', 'ERROR: Invalid path.' => 'FEHLER: Ungültiger Pfad.'];
+$_languages['es'] = ['Down for maintenance.' => 'En mantenimiento.', 'File does not exist.' => 'El archivo no existe.', 'Image file' => 'Archivo de imagen', 'Your browser does not support the video tag.' => 'Tu navegador no admite la etiqueta de video.', 'Your browser does not support the audio tag.' => 'Tu navegador no admite la etiqueta de audio.', 'Unsupported file type: ' => 'Tipo de archivo no compatible: ', 'Index' => 'Índice', ':' => ':', ' of:' => ' de:', 'Nothing to display.' => 'Nada que mostrar.', 'Display of:' => 'Visualización de:', 'ERROR: Invalid path.' => 'ERROR: Ruta no válida.'];
+$_languages['it'] = ['Down for maintenance.' => 'In manutenzione.', 'File does not exist.' => 'Il file non esiste.', 'Image file' => 'File immagine', 'Your browser does not support the video tag.' => 'Il tuo browser non supporta il tag video.', 'Your browser does not support the audio tag.' => 'Il tuo browser non supporta il tag audio.', 'Unsupported file type: ' => 'Tipo di file non supportato: ', 'Index' => 'Indice', ':' => ':', ' of:' => ' di:', 'Nothing to display.' => 'Niente da visualizzare.', 'Display of:' => 'Visualizzazione di:', 'ERROR: Invalid path.' => 'ERRORE: Percorso non valido.'];
+$_languages['pl'] = ['Down for maintenance.' => 'Trwa konserwacja.', 'File does not exist.' => 'Plik nie istnieje.', 'Image file' => 'Plik obrazu', 'Your browser does not support the video tag.' => 'Twoja przeglądarka nie obsługuje znacznika wideo.', 'Your browser does not support the audio tag.' => 'Twoja przeglądarka nie obsługuje znacznika audio.', 'Unsupported file type: ' => 'Nieobsługiwany typ pliku: ', 'Index' => 'Indeks', ':' => ':', ' of:' => ' z:', 'Nothing to display.' => 'Brak danych do wyświetlenia.', 'Display of:' => 'Wyświetlanie:', 'ERROR: Invalid path.' => 'BŁĄD: Nieprawidłowa ścieżka.'];
+$_languages['uk'] = ['Down for maintenance.' => 'Триває обслуговування.', 'File does not exist.' => 'Файл не існує.', 'Image file' => 'Файл зображення', 'Your browser does not support the video tag.' => 'Ваш браузер не підтримує тег відео.', 'Your browser does not support the audio tag.' => 'Ваш браузер не підтримує тег аудіо.', 'Unsupported file type: ' => 'Непідтримуваний тип файлу: ', 'Index' => 'Індекс', ':' => ':', ' of:' => ' з:', 'Nothing to display.' => 'Немає що відображати.', 'Display of:' => 'Відображення:', 'ERROR: Invalid path.' => 'ПОМИЛКА: Неправильний шлях.'];
+$_languages['ja'] = ['Down for maintenance.' => 'メンテナンス中です。', 'File does not exist.' => 'ファイルが存在しません。', 'Image file' => '画像ファイル', 'Your browser does not support the video tag.' => 'お使いのブラウザは video タグをサポートしていません。', 'Your browser does not support the audio tag.' => 'お使いのブラウザは audio タグをサポートしていません。', 'Unsupported file type: ' => 'サポートされていないファイル形式: ', 'Index' => 'インデックス', ':' => '：', ' of:' => ' の:', 'Nothing to display.' => '表示するものがありません。', 'Display of:' => '表示内容：', 'ERROR: Invalid path.' => 'エラー：無効なパスです。'];
+
+define('LNG_MATRIX', $_languages);
+?>
