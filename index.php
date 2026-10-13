@@ -13,7 +13,7 @@ header('Referrer-Policy: no-referrer-when-downgrade');
 
 // Set up language
 if (CONF_LANG == 'auto') {
-	$browserLang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+	$browserLang = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) : 'en';
 	setLang($browserLang);
 }
 else setLang(CONF_LANG);
@@ -44,7 +44,7 @@ if (PRIVATE_MODE) {
 		exit;
 	}
 
-	$username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
+	$username = $_SERVER['PHP_AUTH_USER'];
 	$password = $_SERVER['PHP_AUTH_PW'];
 
 	// Verify the username and password
@@ -56,8 +56,6 @@ if (PRIVATE_MODE) {
 		exit;
 	}
 }
-
-// TBD: PRIVATE_MODE
 
 // Set correct language string
 function setLang($lng) {
@@ -107,14 +105,14 @@ function renderPath($path) {
 	return $renderedPath;
 }
 
-function displayFile($filePath) {
-	if (!file_exists($filePath)) {
+function displayFile($fsPath, $urlPath) {
+	if (!file_exists($fsPath)) {
 		print _t('File does not exist.');
 		return;
 	}
 
-	$fileMimeType = mime_content_type($filePath);
-	$fileUrl = htmlspecialchars($filePath);
+	$fileMimeType = mime_content_type($fsPath);
+	$fileUrl = htmlspecialchars($urlPath);
 
 	switch(true) {
 		case str_starts_with($fileMimeType, 'image/'):
@@ -124,12 +122,12 @@ function displayFile($filePath) {
 
 		case str_starts_with($fileMimeType, 'text/'):
 			// For text files
-			$content = htmlspecialchars(file_get_contents($filePath));
+			$content = file_get_contents($fsPath);
 
-			if (getFileExtension($filePath) == 'md') {
+			if (getFileExtension($fsPath) == 'md') {
 				print '<div class="text">' . parseMarkdown($content) . '</div>';
 			}
-			else print '<pre>' . $content . '</pre>';
+			else print '<pre>' . htmlspecialchars($content) . '</pre>';
 			break;
 
 		case str_starts_with($fileMimeType, 'video/'):
@@ -155,6 +153,15 @@ function displayFile($filePath) {
 
 function parseMarkdown($markdownText) {
 	$markdownText = htmlspecialchars($markdownText, ENT_QUOTES, 'UTF-8');
+
+	// Extract fenced code blocks first so the inline rules below don't alter their contents.
+	// Restored verbatim at the end after nl2br, so their line breaks are preserved as-is.
+	$codeBlocks = [];
+	$markdownText = preg_replace_callback('/```[^\n]*\n(.*?)```/s', function($matches) use (&$codeBlocks) {
+		$placeholder = "\0CODEBLOCK" . count($codeBlocks) . "\0";
+		$codeBlocks[] = '<pre><code>' . $matches[1] . '</code></pre>';
+		return $placeholder;
+	}, $markdownText);
 
 	// Parse headings
 	$markdownText = preg_replace('/^# (.+)$/m', '<h1>$1</h1>', $markdownText);
@@ -186,6 +193,11 @@ function parseMarkdown($markdownText) {
 
 	// Parse line breaks
 	$markdownText = nl2br($markdownText);
+
+	// Restore the extracted fenced code blocks
+	foreach ($codeBlocks as $i => $html) {
+		$markdownText = str_replace("\0CODEBLOCK" . $i . "\0", $html, $markdownText);
+	}
 
 	return $markdownText;
 }
@@ -257,14 +269,18 @@ function readBeaverConfig($configPath) {
 	<body>
 		<div class="wrapper">
 			<?php
-			// Get the current path and sanitize
-			$path = sanitizePath(urldecode(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))));
+			// Resolve the requested path and validate it stays within the configured root
+			$root = realpath(__DIR__ . CONF_ROOT);
+			$systemPath = $root === false ? false : realpath($root . '/' . sanitizePath(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))));
 
-			// Get the current directory
-			$systemPath = preg_replace('#/+$#u', '', __DIR__ . CONF_ROOT . $path);
+			// realpath() returns false for non-existent paths; str_starts_with guards against escaping the root
+			if ($systemPath === false || !($systemPath === $root || str_starts_with($systemPath, $root . DIRECTORY_SEPARATOR))) {
+				print _t('ERROR: Invalid path.');
+			}
+			elseif (is_dir($systemPath)) {
+				// Relative path derived from the validated location, used for links and breadcrumbs
+				$path = str_replace(DIRECTORY_SEPARATOR, '/', ltrim(substr($systemPath, strlen($root)), '/'));
 
-			// Scan the directory to get its contents, apply filter
-			if (is_dir($systemPath)) {
 				$config = readBeaverConfig($systemPath . '/.beavercfg');
 
 				$defaultIgnored = ['.', '..', 'beaver_config.php', 'index.php', '.htaccess', '.beavercfg'];
@@ -282,6 +298,10 @@ function readBeaverConfig($configPath) {
 							$directories[] = $entry;
 						} 
 						elseif (is_file($systemPath . '/' . $entry)) {
+							// Hide files whose extension is listed in CONF_IGNORE
+							if (in_array(strtolower(getFileExtension($entry)), array_map('strtolower', CONF_IGNORE), true)) {
+								continue;
+							}
 							$files[] = $entry;
 						}
 					}
@@ -327,14 +347,12 @@ function readBeaverConfig($configPath) {
 				}
 				else print '<ul><li>' . _t('Nothing to display.') . '</li></ul>';
 			}
-			elseif (is_file($systemPath)) {
+			else {
+				// Validated regular file
+				$path = str_replace(DIRECTORY_SEPARATOR, '/', ltrim(substr($systemPath, strlen($root)), '/'));
 				print '<strong>' . _t('Display of:') . '</strong> ' . renderPath($path);
-
-				// TBD file display
-				displayFile($path);
-
+				displayFile($systemPath, $path);
 			}
-			else print _t('ERROR: Invalid path.');
 			?>
 		</div>
 	</body>

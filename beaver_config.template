@@ -1,10 +1,10 @@
 <?php
-// Gopher 2.0
+// Beaver 2.0
 // By Jindrich "Hank" Mika, 2006-2025, hankmika.com
 // Configuration file
 
 define('MAINTENANCE_MODE', false);
-define('PRIVATE_MODE', false); #TBD
+define('PRIVATE_MODE', false);
 define('CONF_ROOT', '/');
 define('CONF_USEGCFG', true);
 define('CONF_LANG', 'auto');
@@ -15,7 +15,7 @@ define('CONF_IGNORE', ['php', 'phtml', 'php5', 'php6', 'html', 'css']);
 define('CONF_CHARSET', 'UTF-8');
 define('CONF_TITLE', '');
 define('CONF_ROBOTS', 'index,follow'); // noindex,nofollow
-define('CONF_USERS', []); #TBD
+define('CONF_USERS', []);
 
 // Setting up languages
 $_languages['cs'] = ['Down for maintenance.' => 'Probíhá údržba.', 'File does not exist.' => 'Soubor neexistuje.', 'Image file' => 'Obrazový soubor', 'Your browser does not support the video tag.' => 'Váš prohlížeč nepodporuje HTML značku video.', 'Your browser does not support the audio tag.' => 'Váš prohlížeč nepodporuje HTML značku audio.', 'Unsupported file type: ' => 'Nepodporovaný typ souboru: ', 'Index' => 'Index', ':' => ':', ' of:' => ' adresáře:', 'Nothing to display.' => 'Není co zobrazit.', 'Display of:' => 'Zobrazení souboru:', 'ERROR: Invalid path.' => 'CHYBA: Neplatná cesta.'];

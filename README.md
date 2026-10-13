@@ -18,7 +18,7 @@ Contains app configuration constant definitions;
 - **MAINTENANCE_MODE** (true/false): Maintenance mode disables cache, enables error reporting and locks the website for unauthenticated users.
 - **PRIVATE_MODE** (true/false): Locks the website and requires user authentication to view content.
 - **CONF_ROOT** (path relative to index.php location; default: /): Sets up the root directory.
-- **CONF_USEGCFG** (true/false): Toggles the use of .gophercfg files.
+- **CONF_USEGCFG** (true/false): Toggles the use of .beavercfg files.
 - **CONF_LANG** (language code string; default: auto): Selects language by language code string. Default is "auto" which selects language based on browser settings if provided, if not, English is selected.
 - **CONF_BASE** (URL): Full HTTP address of the website.
 - **CONF_SCHEME** (color scheme array): Sets up colors for the website in light and dark mode. Default: 'light_bg' => '#E8DDCB', 'light_text' => '#033649', 'light_link' => '#031634', 'dark_bg' => '#131313', 'dark_text' => '#5cc147', 'dark_link' => '#7aff5f'
