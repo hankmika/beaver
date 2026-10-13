@@ -3,7 +3,10 @@
 // By Jindrich "Hank" Mika, 2006-2025, hankmika.com
 
 // Get config
-require('./beaver_config.php');
+require __DIR__ . '/beaver_config.php';
+
+// Avoid leaking paths via PHP notices in production (maintenance mode re-enables below)
+ini_set('display_errors', '0');
 
 // HTTP headers
 header('Content-Security-Policy: default-src \'self\'; style-src \'self\' \'unsafe-inline\';');
@@ -24,7 +27,10 @@ if (MAINTENANCE_MODE) {
 	ini_set('error_reporting', E_ALL);
 	ini_set('display_errors', '1');
 
-	if (empty($_GET["test"])) {
+	// Bypass requires a non-empty secret from config that matches ?key= (constant-time)
+	$bypass = CONF_MAINT_KEY !== '' && isset($_GET['key']) && hash_equals(CONF_MAINT_KEY, (string)$_GET['key']);
+
+	if (!$bypass) {
 		die(_t('Down for maintenance.'));
 	}
 	else {
@@ -47,8 +53,9 @@ if (PRIVATE_MODE) {
 	$username = $_SERVER['PHP_AUTH_USER'];
 	$password = $_SERVER['PHP_AUTH_PW'];
 
-	// Verify the username and password
-	if (!isset(CONF_USERS[$username]) || CONF_USERS[$username] !== sha1($password)) {
+	// Verify the username and password (bcrypt via password_verify; dummy hash resists user enumeration)
+	$hash = CONF_USERS[$username] ?? '$2y$10$usesomesillystringforsalt1uHfjkP9i.qp1234567890abcdefghi.';
+	if (!password_verify($password, $hash) || !isset(CONF_USERS[$username])) {
 		// Send a 401 response for invalid credentials
 		header('WWW-Authenticate: Basic realm="Restricted Area"');
 		header('HTTP/1.0 401 Unauthorized');
@@ -69,16 +76,16 @@ function _t($str) {
 	else return $str;
 }
 
-// Path sanitization function
+// Light path normalization. NOTE: traversal containment is enforced by the realpath()
+// boundary check at the call site, not here — this only tidies the relative path.
 function sanitizePath($path) {
 	// Remove any null bytes (to prevent injection attacks)
 	$path = str_replace("\0", '', $path);
 
-	// Normalize directory separators to prevent double slashes
+	// Normalize directory separators and collapse double slashes
 	$path = str_replace(['\\', '//'], '/', $path);
 
-	// Allow paths with **diacritics**, but prevent dangerous traversal
-	// Replace only **exact matches** of '../' instead of all occurrences
+	// Drop leading ./ and ../ segments (cosmetic; realpath is authoritative)
 	$path = preg_replace('#(^|/)\.\./#', '', $path);
 
 	// Trim leading and trailing slashes (but keep internal ones)
@@ -87,6 +94,12 @@ function sanitizePath($path) {
 	return $path;
 }
 
+
+// Percent-encode each segment of a relative path to build a safe URL
+function encodePathUrl($path) {
+	if ($path === '') return '';
+	return implode('/', array_map('rawurlencode', explode('/', $path)));
+}
 
 function renderPath($path) {
 	$deconstructedPath = explode('/', $path);
@@ -97,8 +110,8 @@ function renderPath($path) {
 		$renderedPath = '/<a href="/">root</a>';
 
 		foreach($deconstructedPath as $item) {
-			$currentPath .=  '/' . $item;
-			$renderedPath .= '/<a href="' . $currentPath . '">' . $item . '</a>';
+			$currentPath .= '/' . $item;
+			$renderedPath .= '/<a href="' . htmlspecialchars('/' . encodePathUrl(ltrim($currentPath, '/')), ENT_QUOTES) . '">' . htmlspecialchars($item, ENT_QUOTES) . '</a>';
 		}
 	}
 
@@ -112,7 +125,7 @@ function displayFile($fsPath, $urlPath) {
 	}
 
 	$fileMimeType = mime_content_type($fsPath);
-	$fileUrl = htmlspecialchars($urlPath);
+	$fileUrl = htmlspecialchars('/' . encodePathUrl($urlPath), ENT_QUOTES);
 
 	switch(true) {
 		case str_starts_with($fileMimeType, 'image/'):
@@ -133,7 +146,7 @@ function displayFile($fsPath, $urlPath) {
 		case str_starts_with($fileMimeType, 'video/'):
 			// For video files
 			print '<video controls>
-					<source src="' . $fileUrl . '?raw" type="' . $fileMimeType . '">
+					<source src="' . $fileUrl . '?raw" type="' . htmlspecialchars($fileMimeType, ENT_QUOTES) . '">
 					' . _t('Your browser does not support the video tag.') . '
 				  </video>';
 			break;
@@ -141,13 +154,14 @@ function displayFile($fsPath, $urlPath) {
 		case str_starts_with($fileMimeType, 'audio/'):
 			// For audio files
 			print '<audio controls>
-					<source src="' . $fileUrl . '?raw" type="' . $fileMimeType . '">
+					<source src="' . $fileUrl . '?raw" type="' . htmlspecialchars($fileMimeType, ENT_QUOTES) . '">
 					' . _t('Your browser does not support the audio tag.') . '
 				  </audio>';
 			break;
 
 		default:
-			print _t('Unsupported file type: ') . $fileMimeType;
+			// Not renderable inline — offer the raw file for download
+			print _t('Unsupported file type: ') . htmlspecialchars($fileMimeType) . '<br><a href="' . $fileUrl . '?raw">' . _t('Download') . '</a>';
 	}
 }
 
@@ -271,7 +285,7 @@ function readBeaverConfig($configPath) {
 			<?php
 			// Resolve the requested path and validate it stays within the configured root
 			$root = realpath(__DIR__ . CONF_ROOT);
-			$systemPath = $root === false ? false : realpath($root . '/' . sanitizePath(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH))));
+			$systemPath = $root === false ? false : realpath($root . '/' . sanitizePath(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '')));
 
 			// realpath() returns false for non-existent paths; str_starts_with guards against escaping the root
 			if ($systemPath === false || !($systemPath === $root || str_starts_with($systemPath, $root . DIRECTORY_SEPARATOR))) {
@@ -309,11 +323,11 @@ function readBeaverConfig($configPath) {
 					// Sorting logic
 					if ($config['sort_by'] === 'date') {
 						// Sort by date modified
-						usort($directories, function ($a, $b) {
-							return filemtime($b) <=> filemtime($a); // Descending order
+						usort($directories, function ($a, $b) use ($systemPath) {
+							return filemtime("$systemPath/$b") <=> filemtime("$systemPath/$a"); // Descending order
 						});
-						usort($files, function ($a, $b) {
-							return filemtime($b) <=> filemtime($a); // Descending order
+						usort($files, function ($a, $b) use ($systemPath) {
+							return filemtime("$systemPath/$b") <=> filemtime("$systemPath/$a"); // Descending order
 						});
 					} 
 					else {
@@ -327,8 +341,10 @@ function readBeaverConfig($configPath) {
 						print '<ul class="dirs">';
 						foreach ($directories as $directory) {
 							$modTime = date($config['show_times'] ? "Y-m-d H:i:s" : "Y-m-d", filemtime($systemPath . '/' . $directory));
-							$label = $config['show_dates'] || $config['show_times'] ? "[{$directory}] <em>({$modTime})</em>" : "[{$directory}]";
-							print '<li><a href="' . $path . '/' . $directory . '">' . $label . '</a></li>' . PHP_EOL;
+							$name = htmlspecialchars($directory, ENT_QUOTES);
+							$label = $config['show_dates'] || $config['show_times'] ? "[{$name}] <em>({$modTime})</em>" : "[{$name}]";
+							$href = htmlspecialchars('/' . encodePathUrl(ltrim($path . '/' . $directory, '/')), ENT_QUOTES);
+							print '<li><a href="' . $href . '">' . $label . '</a></li>' . PHP_EOL;
 						}
 						print '</ul>';
 					}
@@ -338,8 +354,10 @@ function readBeaverConfig($configPath) {
 						print '<ul class="files">';
 						foreach ($files as $file) {
 							$modTime = date($config['show_times'] ? "Y-m-d H:i:s" : "Y-m-d", filemtime($systemPath . '/' . $file));
-							$label = $config['show_dates'] || $config['show_times'] ? "{$file} <em>({$modTime})</em>" : $file;
-							print '<li><a href="' . $path . '/' . $file . '">' . $label . '</a></li>' . PHP_EOL;
+							$name = htmlspecialchars($file, ENT_QUOTES);
+							$label = $config['show_dates'] || $config['show_times'] ? "{$name} <em>({$modTime})</em>" : $name;
+							$href = htmlspecialchars('/' . encodePathUrl(ltrim($path . '/' . $file, '/')), ENT_QUOTES);
+							print '<li><a href="' . $href . '">' . $label . '</a></li>' . PHP_EOL;
 						}
 						print '</ul>';
 					}

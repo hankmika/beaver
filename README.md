@@ -15,7 +15,8 @@ Main logic and HTML/CSS template. Single file is used to minimize clutter.
 
 Contains app configuration constant definitions;
 
-- **MAINTENANCE_MODE** (true/false): Maintenance mode disables cache, enables error reporting and locks the website for unauthenticated users.
+- **MAINTENANCE_MODE** (true/false): Maintenance mode enables error reporting and locks the website behind a "Down for maintenance" page. The site can still be previewed by appending `?key=<CONF_MAINT_KEY>` to the URL (see CONF_MAINT_KEY).
+- **CONF_MAINT_KEY** (string; default: empty): Secret used to preview the site while MAINTENANCE_MODE is on, via `?key=<value>`. When empty, no bypass is possible and the site is fully locked.
 - **PRIVATE_MODE** (true/false): Locks the website and requires user authentication to view content.
 - **CONF_ROOT** (path relative to index.php location; default: /): Sets up the root directory.
 - **CONF_USEGCFG** (true/false): Toggles the use of .beavercfg files.
@@ -26,7 +27,7 @@ Contains app configuration constant definitions;
 - **CONF_CHARSET** (charset string): Character set to be used by the website.
 - **CONF_TITLE** (title string): HTML title to be used by the website.
 - **CONF_ROBOTS** (robots string): HTML robots meta setting. Default: index,follow
-- **CONF_USERS** (users array): Allowed usernames and passwords required if PRIVATE_MODE or MAINTENANCE_MODE is on. Passwords are sha1 encoded. Default: 'root' => '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33' (password is foo)
+- **CONF_USERS** (users array): Allowed usernames mapped to bcrypt password hashes, required if PRIVATE_MODE is on. Generate a hash with `php -r "echo password_hash('your-password', PASSWORD_DEFAULT);"`. Default: empty (e.g. 'root' => '$2y$10$...').
 
 ### Server config / apache.htaccess
 
