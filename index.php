@@ -224,6 +224,16 @@ function getFileExtension($filePath) {
 	return isset($fileInfo['extension']) ? $fileInfo['extension'] : '';
 }
 
+function isHiddenFile($name, $config) {
+	$builtIn = ['beaver_config.php', 'index.php', '.htaccess', '.beavercfg'];
+	if (in_array($name, $builtIn, true) || in_array($name, $config['ignored_files'], true)) return true;
+
+	$ext = strtolower(getFileExtension($name));
+	if (preg_match('/^(php\d*|phtml|phar|phps)$/', $ext)) return true;
+
+	return in_array($ext, array_map('strtolower', CONF_IGNORE), true);
+}
+
 function readBeaverConfig($configPath) {
 	$config = [
 		'sort_by' => 'name', // Default config
@@ -291,6 +301,9 @@ function readBeaverConfig($configPath) {
 			if ($systemPath === false || !($systemPath === $root || str_starts_with($systemPath, $root . DIRECTORY_SEPARATOR))) {
 				print _t('ERROR: Invalid path.');
 			}
+			elseif (!is_dir($systemPath) && isHiddenFile(basename($systemPath), readBeaverConfig(dirname($systemPath) . '/.beavercfg'))) {
+				print _t('ERROR: Invalid path.');
+			}
 			elseif (is_dir($systemPath)) {
 				// Relative path derived from the validated location, used for links and breadcrumbs
 				$path = str_replace(DIRECTORY_SEPARATOR, '/', ltrim(substr($systemPath, strlen($root)), '/'));
@@ -311,11 +324,7 @@ function readBeaverConfig($configPath) {
 						if (is_dir($systemPath . '/' . $entry)) {
 							$directories[] = $entry;
 						} 
-						elseif (is_file($systemPath . '/' . $entry)) {
-							// Hide files whose extension is listed in CONF_IGNORE
-							if (in_array(strtolower(getFileExtension($entry)), array_map('strtolower', CONF_IGNORE), true)) {
-								continue;
-							}
+						elseif (is_file($systemPath . '/' . $entry) && !isHiddenFile($entry, $config)) {
 							$files[] = $entry;
 						}
 					}
