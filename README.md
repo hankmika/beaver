@@ -3,9 +3,17 @@ Beaver is a Gopher-inspired web content browser. See [CHANGELOG.md](CHANGELOG.md
 
 Beaver allows you to list and display files located on your web server in a minimalistic, managed and secure way. It follows the server's directory structure, starting at *CONF_ROOT*, lists any files and directories while allowing the user to view common file types within the application. You can also add custom configuration for each directory by adding a hidden *.beavercfg* file.
 
+## Installation
+
+1. Copy `beaver/index.php` into the folder you want Beaver to serve.
+2. Copy `beaver/beaver_config.template` next to it as `beaver_config.php` and fill it in (see [beaver_config.php](#beaver_configphp)).
+3. **Set up your web server. This step is required.** Beaver only works when every request is passed to `index.php`. Without it, the server shows files directly, past Beaver's checks (hidden files, private mode, maintenance mode).
+   - **Apache:** copy `Server config/apache.htaccess` next to `index.php` as `.htaccess`. Needs `mod_rewrite` and an `AllowOverride` that permits rewrite rules.
+   - **nginx:** add the `location` blocks from `Server config/nginx_sample.conf` to your server block, adjusting the PHP-FPM address.
+
 ## Files
 
-The application itself consists of index.php and beaver_config.php. There are also other support files that can be used based on your configuration and needs.
+The application itself consists of `index.php` and `beaver_config.php`, found in the `beaver/` folder (the config as `beaver_config.template`). Web server configuration lives in `Server config/`.
 
 ### index.php
 
@@ -31,15 +39,15 @@ Contains app configuration constant definitions;
 
 ### Server config / apache.htaccess
 
-Bypasses default behavior of Apache-based servers and allows Beaver to serve files and folders indirectly in a managed way. 
+Required on Apache, deployed as `.htaccess` next to `index.php` (see [Installation](#installation)). Passes every request to `index.php` so Beaver serves all files and folders in a managed way.
+
+### Server config / nginx_sample.conf
+
+Required on nginx, as part of your server block (see [Installation](#installation)). Sample configuration that passes every request to `index.php`.
 
 ### Server config / normalize_nfc.sh
 
 Converts Mac OS based UTF-8 NFD filenames to standard/Linux NFC
-
-### Server config / .nginx_sample.conf
-
-Sample configuration file for NGINX-based servers.
 
 ---
 
@@ -50,7 +58,9 @@ Beaver handles .beavercfg files by default. These are INI-style formatted files 
 ```ini
 [settings]
 sort_by = name  ; Options: name, date
-ignored_files = .git, node_modules, secret.txt  ; Ignore specific files/folders
+ignored_files = .git, node_modules, notes.txt  ; Ignore specific files/folders
 show_dates = true  ; Show last modified date in listing
 show_times = true  ; Show last modified date/time in listing
 ```
+
+Ignored files and folders are left out of listings, but ignored folders can still be browsed by URL and ignored files can still be fetched with `?raw`. Don't rely on `ignored_files` to keep anything secret.

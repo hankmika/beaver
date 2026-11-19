@@ -6,7 +6,8 @@
       "release-type": "simple",
       "package-name": "beaver",
       "include-component-in-tag": false,
-      "extra-files": ["index.php"]
+      "version-file": ".github/version.txt",
+      "extra-files": ["beaver/index.php"]
     }
   }
 }
