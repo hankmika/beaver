@@ -1,6 +1,6 @@
 <?php
-// Beaver 2.0
-// By Jindrich "Hank" Mika, 2006-2025, hankmika.com
+// Beaver
+// By Jindrich "Hank" Mika, 2006-2026, hankmika.com
 // Configuration file
 
 define('MAINTENANCE_MODE', false);

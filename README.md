@@ -1,5 +1,5 @@
 # Beaver
-Beaver 2.0 is a Gopher-inspired web content browser.
+Beaver is a Gopher-inspired web content browser. See [CHANGELOG.md](CHANGELOG.md) for versions and upgrade notes.
 
 Beaver allows you to list and display files located on your web server in a minimalistic, managed and secure way. It follows the server's directory structure, starting at *CONF_ROOT*, lists any files and directories while allowing the user to view common file types within the application. You can also add custom configuration for each directory by adding a hidden *.beavercfg* file.
 

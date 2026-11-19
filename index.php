@@ -1,6 +1,9 @@
 <?php
-// Beaver 2.0
-// By Jindrich "Hank" Mika, 2006-2025, hankmika.com
+// Beaver
+// By Jindrich "Hank" Mika, 2006-2026, hankmika.com
+
+// Set by release-please from commit messages; do not edit by hand
+define('BEAVER_VERSION', '2.1.0'); // x-release-please-version
 
 // Get config
 require __DIR__ . '/beaver_config.php';
@@ -684,11 +687,11 @@ if (isset($_GET['raw']) && !($validPath && is_dir($systemPath))) {
 		<title><?= CONF_TITLE ?></title>
 		
 		<!--
-		 ____  _____    ___     _______ ____    ____    ___  
-		| __ )| ____|  / \ \   / / ____|  _ \  |___ \  / _ \ 
-		|  _ \|  _|   / _ \ \ / /|  _| | |_) |   __) || | | |
-		| |_) | |___ / ___ \ V / | |___|  _ <   / __/ | |_| |
-		|____/|_____/_/   \_\_/  |_____|_| \_\ |_____(_)___/ 
+		 ____  _____    ___     _______ ____    ____ 
+		| __ )| ____|  / \ \   / / ____|  _ \  |___ \ 
+		|  _ \|  _|   / _ \ \ / /|  _| | |_) |   __) |
+		| |_) | |___ / ___ \ V / | |___|  _ <   / __/
+		|____/|_____/_/   \_\_/  |_____|_| \_\ |_____\
 															 
 		-->
 

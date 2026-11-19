@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "e324236e85dd9247cc4808c15e2a46b243a43085",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "beaver",
+      "include-component-in-tag": false,
+      "extra-files": ["index.php"]
+    }
+  }
+}
