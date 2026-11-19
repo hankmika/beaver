@@ -5,11 +5,5 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule .* https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# If the query parameter "raw" is present, check if the file or directory exists
-RewriteCond %{QUERY_STRING} raw
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-# Default behavior: pass the request to index.php
+# Pass every request to index.php, including ?raw files, so access checks always apply
 RewriteRule ^ index.php [QSA,L]

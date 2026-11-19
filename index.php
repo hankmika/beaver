@@ -566,14 +566,67 @@ function getFileExtension($filePath) {
 	return isset($fileInfo['extension']) ? $fileInfo['extension'] : '';
 }
 
+function isProtectedFile($name) {
+	if (in_array($name, ['beaver_config.php', 'index.php', '.htaccess', '.beavercfg'], true)) return true;
+	return (bool)preg_match('/\.(php\d*|phtml|phar|phps)$/i', $name);
+}
+
 function isHiddenFile($name, $config) {
-	$builtIn = ['beaver_config.php', 'index.php', '.htaccess', '.beavercfg'];
-	if (in_array($name, $builtIn, true) || in_array($name, $config['ignored_files'], true)) return true;
+	if (isProtectedFile($name) || in_array($name, $config['ignored_files'], true)) return true;
+	return in_array(strtolower(getFileExtension($name)), array_map('strtolower', CONF_IGNORE), true);
+}
 
-	$ext = strtolower(getFileExtension($name));
-	if (preg_match('/^(php\d*|phtml|phar|phps)$/', $ext)) return true;
+// Stream a file as-is, with support for conditional and range requests (needed for media seeking)
+function serveRawFile($fsPath) {
+	$size = filesize($fsPath);
+	$mtime = filemtime($fsPath);
+	$start = 0;
+	$end = $size - 1;
 
-	return in_array($ext, array_map('strtolower', CONF_IGNORE), true);
+	$mime = mime_content_type($fsPath) ?: 'application/octet-stream';
+	if (str_starts_with($mime, 'text/')) $mime .= '; charset=' . CONF_CHARSET;
+
+	header('Content-Type: ' . $mime);
+	header('Content-Disposition: inline; filename*=UTF-8\'\'' . rawurlencode(basename($fsPath)));
+	header('Content-Security-Policy: default-src \'none\'; img-src \'self\'; media-src \'self\'; style-src \'unsafe-inline\'; sandbox');
+	header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
+	header('Accept-Ranges: bytes');
+	if (PRIVATE_MODE) header('Cache-Control: private');
+
+	if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $mtime) {
+		http_response_code(304);
+		exit;
+	}
+
+	if (isset($_SERVER['HTTP_RANGE']) && preg_match('/^bytes=(\d*)-(\d*)$/', $_SERVER['HTTP_RANGE'], $m) && $m[1] . $m[2] !== '') {
+		if ($m[1] === '') $start = max(0, $size - (int)$m[2]);
+		else {
+			$start = (int)$m[1];
+			if ($m[2] !== '') $end = min((int)$m[2], $size - 1);
+		}
+
+		if ($start > $end) {
+			http_response_code(416);
+			header('Content-Range: bytes */' . $size);
+			exit;
+		}
+
+		http_response_code(206);
+		header('Content-Range: bytes ' . $start . '-' . $end . '/' . $size);
+	}
+
+	header('Content-Length: ' . ($end - $start + 1));
+	if ($_SERVER['REQUEST_METHOD'] === 'HEAD') exit;
+
+	while (ob_get_level()) ob_end_clean();
+	$fp = fopen($fsPath, 'rb');
+	fseek($fp, $start);
+	for ($left = $end - $start + 1; $left > 0 && !feof($fp); $left -= 8192) {
+		print fread($fp, min(8192, $left));
+		flush();
+	}
+	fclose($fp);
+	exit;
 }
 
 function readBeaverConfig($configPath) {
@@ -603,6 +656,22 @@ function readBeaverConfig($configPath) {
 	}
 
 	return $config;
+}
+
+// Resolve the requested path and validate it stays within the configured root
+$root = realpath(__DIR__ . CONF_ROOT);
+$systemPath = $root === false ? false : realpath($root . '/' . sanitizePath(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '')));
+
+// realpath() returns false for non-existent paths; str_starts_with guards against escaping the root
+$validPath = $systemPath !== false && ($systemPath === $root || str_starts_with($systemPath, $root . DIRECTORY_SEPARATOR));
+
+// Raw files are served here, after the maintenance and private mode checks above
+if (isset($_GET['raw']) && !($validPath && is_dir($systemPath))) {
+	if (!$validPath || !is_file($systemPath) || isProtectedFile(basename($systemPath))) {
+		http_response_code(404);
+		exit;
+	}
+	serveRawFile($systemPath);
 }
 
 ?>
@@ -635,12 +704,7 @@ function readBeaverConfig($configPath) {
 	<body>
 		<div class="wrapper">
 			<?php
-			// Resolve the requested path and validate it stays within the configured root
-			$root = realpath(__DIR__ . CONF_ROOT);
-			$systemPath = $root === false ? false : realpath($root . '/' . sanitizePath(urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '')));
-
-			// realpath() returns false for non-existent paths; str_starts_with guards against escaping the root
-			if ($systemPath === false || !($systemPath === $root || str_starts_with($systemPath, $root . DIRECTORY_SEPARATOR))) {
+			if (!$validPath) {
 				print _t('ERROR: Invalid path.');
 			}
 			elseif (!is_dir($systemPath) && isHiddenFile(basename($systemPath), readBeaverConfig(dirname($systemPath) . '/.beavercfg'))) {
